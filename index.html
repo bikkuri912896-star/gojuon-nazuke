@@ -516,7 +516,7 @@ aside { display: grid; gap: 18px; min-width: 0; }
     const tweet = `命名「${name}」
 名前らしさ ${r.score}点 ― ${commentFor(r.score)}
 #五十音なづけ`;
-    $("tweetBtn").href = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweet) + "&url=" + encodeURIComponent("https://gojuon-nazuke.com/") + "&via=Chairman_gm";
+    $("tweetBtn").href = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweet) + "&url=" + encodeURIComponent("https://gojuon-nazuke.com/");
     $("result").hidden = false;
     saveHistory({ name, score: r.score });
     render();
