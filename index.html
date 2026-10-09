@@ -468,7 +468,7 @@ aside { display: grid; gap: 18px; min-width: 0; }
     // 長さ
     if (!sur && a.length >= 7) add(-6, "長すぎて覚えにくい");
 
-    const score = Math.max(1, Math.min(99, s));
+    const score = Math.max(1, Math.min(100, s));
     const ge = endOf(given) || e;
     const tags = [ge && ge[2] ? ge[2] + "っぽい" : "男女どちらでも", a.length + "文字"];
     if (sur) tags.push("フルネーム風");
@@ -476,7 +476,7 @@ aside { display: grid; gap: 18px; min-width: 0; }
   }
 
   function commentFor(s) {
-    if (s >= 100) return "どこかのクラスに必ずいる名前です。";
+    if (s >= 100) return "満点！ 役所でもそのまま受理されそうな名前です。";
     if (s >= 80) return "名簿に載っていても誰も驚きません。";
     if (s >= 62) return "ちょっと珍しいけど、ありそうな名前。";
     if (s >= 45) return "キラキラネームの気配がします。";
