@@ -398,7 +398,6 @@ aside { display: grid; gap: 18px; min-width: 0; }
   const PARTS = ("ゆう しょう まさ ひろ かず たか よし はる あき なつ ふゆ みな さく ひな りょう けん こう しん だい りゅう " +
     "そう たく とも のぶ まな あや さや みつ てる やす ひで ゆき まり えり あい みお れい ゆめ ひかり そら かい みゆ はな " +
     "もも さき ちか なお あゆ るり すみ きよ ただ つね ひさ").split(" ");
-  const RARE = "ぬへむをぁぃぅぇぉぢづぺぷぽぴぜぞゑ";
   const VOWELS = "あいうえお";
 
   function scoreName(n) {
@@ -446,8 +445,6 @@ aside { display: grid; gap: 18px; min-width: 0; }
     else if ("あかさたなはまやらわ".includes(a[0])) add(3, `ア段の「${a[0]}」で始まると明るい響き`);
 
     // 文字ごとのチェック
-    const rare = a.filter(c => RARE.includes(c));
-    if (rare.length) add(-4 * rare.length, `名前にはあまり使わない「${[...new Set(rare)].join("・")}」`);
     a.forEach((c, i) => {
       if (i === 0) return;
       const p = a[i - 1];
@@ -462,11 +459,7 @@ aside { display: grid; gap: 18px; min-width: 0; }
     for (let i = 2; i < a.length; i++) {
       if (VOWELS.includes(a[i]) && VOWELS.includes(a[i - 1]) && VOWELS.includes(a[i - 2])) { add(-6, "母音が3つ続いてぼやける"); break; }
     }
-    const nn = a.filter(c => c === "ん" || c === "っ").length;
-    if (nn >= 3) add(-8, "「ん」「っ」が多くて詰まって聞こえる");
 
-    // 長さ
-    if (!sur && a.length >= 7) add(-6, "長すぎて覚えにくい");
 
     const score = Math.max(1, Math.min(100, s));
     const ge = endOf(given) || e;
