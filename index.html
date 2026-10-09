@@ -7,16 +7,16 @@
 <meta property="og:title" content="五十音なづけ">
 <meta property="og:description" content="ランダムに出るひらがなを何文字目に置くか決めて、人の名前を作るゲーム。">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://bikkuri912896-star.github.io/gojuon-nazuke/">
-<meta property="og:image" content="https://bikkuri912896-star.github.io/gojuon-nazuke/ogp.png">
+<meta property="og:url" content="https://gojuon-nazuke.com/">
+<meta property="og:image" content="https://gojuon-nazuke.com/ogp.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:site_name" content="五十音なづけ">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="五十音なづけ">
 <meta name="twitter:description" content="ランダムに出るひらがなを何文字目に置くか決めて、人の名前を作るゲーム。">
-<meta name="twitter:image" content="https://bikkuri912896-star.github.io/gojuon-nazuke/ogp.png">
-<link rel="canonical" href="https://bikkuri912896-star.github.io/gojuon-nazuke/">
+<meta name="twitter:image" content="https://gojuon-nazuke.com/ogp.png">
+<link rel="canonical" href="https://gojuon-nazuke.com/">
 <style>html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>五十音なづけ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -506,7 +506,7 @@ aside { display: grid; gap: 18px; min-width: 0; }
     const tweet = `命名「${name}」
 名前らしさ ${r.score}点 ― ${commentFor(r.score)}
 #五十音なづけ`;
-    $("tweetBtn").href = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweet) + "&url=" + encodeURIComponent("https://bikkuri912896-star.github.io/gojuon-nazuke/");
+    $("tweetBtn").href = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweet) + "&url=" + encodeURIComponent("https://gojuon-nazuke.com/");
     $("result").hidden = false;
     saveHistory({ name, score: r.score });
     render();
@@ -623,7 +623,7 @@ aside { display: grid; gap: 18px; min-width: 0; }
   $("optUnlock").addEventListener("change", e => start({ ...S, unlock: e.target.checked }));
   $("copyBtn").addEventListener("click", async () => {
     if (!lastResult) return;
-    const text = `命名「${lastResult.name}」 名前らしさ ${lastResult.score}点 ― ${commentFor(lastResult.score)}（五十音なづけ）https://bikkuri912896-star.github.io/gojuon-nazuke/`;
+    const text = `命名「${lastResult.name}」 名前らしさ ${lastResult.score}点 ― ${commentFor(lastResult.score)}（五十音なづけ）https://gojuon-nazuke.com/`;
     const btn = $("copyBtn");
     try { await navigator.clipboard.writeText(text); btn.textContent = "コピーしました"; }
     catch {
