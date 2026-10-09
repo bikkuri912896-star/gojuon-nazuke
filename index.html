@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="ランダムに出るひらがなを何文字目に置くか決めて、人の名前を作るゲーム。">
+<meta property="og:title" content="五十音なづけ">
+<meta property="og:description" content="ランダムに出るひらがなを何文字目に置くか決めて、人の名前を作るゲーム。">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<style>html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>五十音なづけ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Yuji+Syuku&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap">
+<style>
+/* Layout: 左に盤面（引いた札 → 名前の枠）、右に設定と五十音表。結果は命名書（縦書き）で出す */
+:root {
+  --bg: #ECEFEA;
+  --paper: #FAFBF8;
+  --sheet: #FFFFFF;
+  --ink: #1D2331;
+  --muted: #646B78;
+  --line: #CDD2C9;
+  --accent: #2A4B7C;      /* 藍 */
+  --accent-soft: #DCE4F0;
+  --seal: #C23B2B;        /* 朱 */
+  --good: #2E7D4F;
+  --font-display: "Yuji Syuku", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-kana: "Klee One", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-ui: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171D; --paper: #1D2129; --sheet: #242933; --ink: #E9E7E0; --muted: #9AA1AD;
+    --line: #353B47; --accent: #93B3E6; --accent-soft: #26344A; --seal: #E2644F; --good: #6CC593;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171D; --paper: #1D2129; --sheet: #242933; --ink: #E9E7E0; --muted: #9AA1AD;
+  --line: #353B47; --accent: #93B3E6; --accent-soft: #26344A; --seal: #E2644F; --good: #6CC593;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 15px; line-height: 1.7; }
+.wrap { max-width: 1060px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 48px; display: grid; gap: 24px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+h1 { font-family: var(--font-display); font-weight: 400; font-size: 2.4rem; margin: 0; letter-spacing: .08em; line-height: 1.2; }
+header p { margin: 0; color: var(--muted); max-width: 46em; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+@media (max-width: 820px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 22px; min-width: 0; }
+.label { font-size: .75rem; letter-spacing: .14em; color: var(--muted); margin: 0 0 10px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* 札 */
+.drawrow { display: flex; flex-wrap: wrap; align-items: center; gap: 20px 28px; }
+.tile {
+  width: 7.5rem; height: 7.5rem; display: grid; place-items: center; flex: none;
+  background: var(--sheet); border: 2px solid var(--ink); border-radius: 8px;
+  font-family: var(--font-kana); font-weight: 600; font-size: 4.6rem; line-height: 1;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.tile.rolling { color: var(--muted); }
+.tile.land { animation: land .28s ease-out; }
+@keyframes land { from { transform: translateY(-6px) rotate(-4deg); } to { transform: none; } }
+.drawinfo { display: grid; gap: 10px; min-width: 0; }
+.drawinfo .big { font-size: 1.05rem; margin: 0; }
+.drawinfo .sub { margin: 0; color: var(--muted); font-size: .88rem; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
+a.btn { text-decoration: none; display: inline-block; }
+.btn.tweet { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.btn.tweet:hover:not(:disabled) { color: var(--paper); border-color: var(--ink); filter: brightness(1.2); }
+.btn { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 6px 16px; font-size: .9rem; }
+.btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+.btn.primary:hover { color: var(--paper); filter: brightness(1.08); }
+.unlock { border: 1px solid var(--seal); border-radius: 6px; padding: 8px 10px; display: grid; gap: 6px; }
+.unlock-label { margin: 0; font-size: .78rem; color: var(--seal); letter-spacing: .06em; }
+.btn.kana { font-family: var(--font-kana); font-weight: 600; font-size: 1.1rem; padding: 2px 14px; border-color: var(--seal); color: var(--seal); }
+.btn.kana:hover:not(:disabled) { background: var(--seal); color: var(--paper); border-color: var(--seal); }
+.lenpick { margin-top: 12px; }
+.lenpick b { font-variant-numeric: tabular-nums; }
+
+/* 名前の枠 */
+.slots { display: grid; gap: 10px; margin-top: 26px; }
+.slot {
+  aspect-ratio: 1; max-width: 100%; border: 2px dashed var(--line); border-radius: 8px; background: transparent;
+  display: grid; place-items: center; position: relative; padding: 0;
+  font-family: var(--font-kana); font-weight: 600; font-size: clamp(1.8rem, 7vw, 3.4rem); line-height: 1;
+  transition: border-color .15s, background .15s;
+}
+.slot .ghost { color: var(--accent); opacity: 0; transition: opacity .15s; }
+.slot .num { position: absolute; bottom: -1.5rem; left: 0; right: 0; font-family: var(--font-ui); font-weight: 400; font-size: .72rem; color: var(--muted); }
+.slot:not(.filled):not(:disabled):hover, .slot:not(.filled):not(:disabled):focus-visible { border-color: var(--accent); background: var(--accent-soft); }
+.slot:not(.filled):not(:disabled):hover .ghost, .slot:not(.filled):not(:disabled):focus-visible .ghost { opacity: .55; }
+.slot.filled { border-style: solid; border-color: var(--ink); background: var(--sheet); cursor: default; }
+.slot.just { animation: land .28s ease-out; }
+.slot:disabled:not(.filled) { cursor: default; }
+.hint { margin: 38px 0 0; color: var(--muted); font-size: .85rem; }
+kbd { font-family: var(--font-ui); font-size: .78rem; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--sheet); }
+
+/* 結果 */
+.result { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px 32px; align-items: start; margin-top: 24px; }
+@media (max-width: 560px) { .result { grid-template-columns: minmax(0, 1fr); justify-items: center; } }
+.sheet {
+  writing-mode: vertical-rl; background: var(--sheet); border: 1px solid var(--line);
+  height: 25rem; width: 13rem; max-width: 100%; padding: 22px 18px; position: relative;
+  display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+  box-shadow: 0 1px 0 var(--line), 0 10px 24px -14px rgba(0,0,0,.35);
+}
+.sheet .mei { font-family: var(--font-display); font-size: 1.6rem; letter-spacing: .6em; align-self: flex-start; }
+.sheet .name { font-family: var(--font-display); font-size: 3.6rem; letter-spacing: .12em; line-height: 1.1; }
+.sheet .date { font-family: var(--font-display); font-size: .95rem; color: var(--muted); align-self: flex-end; letter-spacing: .1em; }
+.seal {
+  position: absolute; left: 16px; bottom: 18px; writing-mode: horizontal-tb;
+  width: 2.3rem; height: 2.3rem; border: 2px solid var(--seal); color: var(--seal); border-radius: 4px;
+  display: grid; place-items: center; font-family: var(--font-display); font-size: 1.15rem; transform: rotate(-6deg);
+}
+.verdict { display: grid; gap: 14px; min-width: 0; width: 100%; }
+.score { display: flex; align-items: baseline; gap: 8px; }
+.score b { font-family: var(--font-kana); font-weight: 600; font-size: 3.4rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.score span { color: var(--muted); }
+.meter { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .6s ease-out; }
+.comment { font-size: 1.15rem; margin: 0; text-wrap: balance; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: .78rem; border: 1px solid var(--line); border-radius: 999px; padding: 1px 10px; color: var(--muted); }
+.notes { margin: 0; padding-left: 1.2em; color: var(--muted); font-size: .88rem; }
+.notes li.plus::marker { content: "＋ "; color: var(--good); }
+.notes li.minus::marker { content: "－ "; color: var(--seal); }
+
+/* 右カラム */
+aside { display: grid; gap: 18px; min-width: 0; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { flex: 1; border: 0; background: transparent; padding: 6px 0; font-variant-numeric: tabular-nums; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--paper); }
+.check { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: .9rem; }
+.check input { width: 1rem; height: 1rem; accent-color: var(--accent); }
+.settings .note { margin: 10px 0 0; color: var(--muted); font-size: .78rem; }
+.chart { display: flex; flex-direction: row-reverse; gap: 2px; justify-content: flex-end; overflow-x: auto; padding-bottom: 2px; }
+.chart .col { display: grid; grid-template-rows: repeat(5, 1fr); gap: 2px; flex: none; }
+.chart .cell {
+  width: 1.55rem; height: 1.55rem; display: grid; place-items: center; font-family: var(--font-kana);
+  font-size: .9rem; border-radius: 3px; color: var(--ink);
+}
+.chart .cell.blank { visibility: hidden; }
+.chart .cell.off { color: var(--line); }
+.chart .cell.used { background: var(--ink); color: var(--paper); }
+.chart .cell.passed { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--seal); }
+.chart .cell.current { outline: 2px solid var(--accent); outline-offset: -2px; color: var(--accent); font-weight: 600; }
+.chart + .chart { margin-top: 8px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font-size: .75rem; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.legend .l-used::before { background: var(--ink); }
+.legend .l-cur::before { border: 2px solid var(--accent); }
+.legend .l-pass::before { border: 1px solid var(--line); background: linear-gradient(to bottom right, transparent 45%, var(--seal) 45% 55%, transparent 55%); }
+.history { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.history li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dotted var(--line); padding-bottom: 4px; }
+.history .hn { font-family: var(--font-kana); font-weight: 600; font-size: 1.05rem; letter-spacing: .06em; }
+.history .hs { color: var(--muted); font-variant-numeric: tabular-nums; font-size: .85rem; }
+.empty { color: var(--muted); font-size: .85rem; margin: 0; }
+@media (prefers-reduced-motion: reduce) { .tile.land, .slot.just { animation: none; } .meter i { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>五十音なづけ</h1>
+    <p>文字数が5〜8文字からランダムに決まり、ひらがなが一文字ずつ出ます。何文字目に置くかを決めて、人の名前を作ってください。同じ文字が何度も出ることがあります。パスはできず、置いた文字は動かせません。</p>
+  </header>
+
+  <div class="layout">
+    <main class="panel" id="board">
+      <p class="label">いま引いた文字</p>
+      <div class="drawrow">
+        <div class="tile" id="tile" aria-live="polite">あ</div>
+        <div class="drawinfo">
+          <p class="big" id="status">どこに置きますか？</p>
+          <p class="sub" id="sub"></p>
+          <div class="unlock" id="unlockBox" hidden>
+            <p class="unlock-label" id="unlockLabel">縛り解除（1回だけ）</p>
+            <div class="btnrow" id="unlockBtns"></div>
+          </div>
+          <div class="btnrow">
+            <button class="btn redraw" id="redrawBtn" type="button" hidden>カードを変える（1回だけ）</button>
+            <button class="btn" id="restartBtn" type="button">最初から</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="slots" id="slots"></div>
+      <p class="hint">枠をクリックして置く。キーボードなら <kbd>1</kbd>〜<kbd>8</kbd> で置けます。</p>
+
+      <section class="result" id="result" hidden>
+        <div class="sheet" aria-label="命名書">
+          <div class="mei">命名</div>
+          <div class="name" id="resName"></div>
+          <div class="date" id="resDate"></div>
+          <div class="seal" aria-hidden="true">名</div>
+        </div>
+        <div class="verdict">
+          <p class="label" style="margin:0">名前らしさ</p>
+          <div class="score"><b id="resScore">0</b><span>点</span></div>
+          <div class="meter"><i id="resMeter"></i></div>
+          <p class="comment" id="resComment"></p>
+          <div class="tags" id="resTags"></div>
+          <ul class="notes" id="resNotes"></ul>
+          <div class="btnrow">
+            <button class="btn primary" id="againBtn" type="button">もう一度</button>
+            <a class="btn tweet" id="tweetBtn" href="https://x.com/intent/tweet" target="_blank" rel="noopener">X（Twitter）でポスト</a>
+            <button class="btn" id="copyBtn" type="button">結果をコピー</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside>
+      <section class="panel settings">
+        <p class="label">文字数</p>
+        <div class="seg" id="lenSeg" role="group" aria-label="文字数"></div>
+        <label class="check"><input type="checkbox" id="optDaku"> 濁音・半濁音（が・ぱ など）も出す</label>
+        <label class="check"><input type="checkbox" id="optSmall"> 小さい文字（ゃ・ゅ・ょ・っ）も出す</label>
+        <label class="check"><input type="checkbox" id="optUnlock"> 縛り解除：濁音・小文字（1回だけ、引いた文字を濁音・半濁音・小さい文字に変えられる）</label>
+        <label class="check"><input type="checkbox" id="optRedraw"> 縛り解除：カード変更（1回だけ、引いた文字を別のカードに引き直せる）</label>
+        <p class="note">設定を変えると新しいゲームが始まります。</p>
+      </section>
+
+      <section class="panel">
+        <p class="label">五十音表（このゲームで出た文字）</p>
+        <div id="charts"></div>
+        <div class="legend"><span class="l-used">使った</span><span class="l-cur">いまの文字</span><span class="l-pass">変えた元の文字</span></div>
+      </section>
+
+      <section class="panel">
+        <p class="label">これまでの名前</p>
+        <ul class="history" id="history"></ul>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const BASE = [
+    ["あ","い","う","え","お"], ["か","き","く","け","こ"], ["さ","し","す","せ","そ"], ["た","ち","つ","て","と"],
+    ["な","に","ぬ","ね","の"], ["は","ひ","ふ","へ","ほ"], ["ま","み","む","め","も"], ["や",null,"ゆ",null,"よ"],
+    ["ら","り","る","れ","ろ"], ["わ",null,null,null,"を"], ["ん",null,null,null,null]
+  ];
+  const DAKU = [
+    ["が","ぎ","ぐ","げ","ご"], ["ざ","じ","ず","ぜ","ぞ"], ["だ","ぢ","づ","で","ど"],
+    ["ば","び","ぶ","べ","ぼ"], ["ぱ","ぴ","ぷ","ぺ","ぽ"]
+  ];
+  const SMALL = [["ゃ","ゅ","ょ","っ",null]];
+
+  const NAMES = new Set(("はると ゆいと そうた みなと はるき ゆうと りく あおい そうま たいが ひなた れん いつき かいと ゆうま こうき " +
+    "しょうた けんた だいき ゆうき たくみ りょう しゅん はやと ひろと あきら まさと けんと こうた たけし ひろし たろう じろう " +
+    "いちろう けんじ さとし まこと つばさ はじめ わたる そら かなた ゆうた りょうた たくや なおき かずき ゆうや しんや てつや " +
+    "まさき ともき ひでき のぶお かずお まさお てるお よしお あつし たかし きよし つよし まなぶ すすむ おさむ みのる ひかる " +
+    "そうすけ こうすけ ゆうすけ だいすけ しゅうへい こうへい りょうへい しょうへい ゆうご しんご けいご りゅうせい たいち " +
+    "さくら ゆい ひな あかり めい ゆな りこ みお はな かのん ひまり つむぎ えま みゆ あやか ななみ まな さき ゆき みさき " +
+    "あやの なつき ももか はるか ちひろ まい えり かな なな みく ゆか あい まゆ さやか ゆみ ともみ ひとみ めぐみ よしこ " +
+    "はなこ ゆうこ けいこ あやこ なおこ みちこ さちこ のぞみ かえで しおり すみれ あんな りな あみ みほ りさ ちか ゆりこ " +
+    "こはる ひより いろは ことは みつき みなみ あすか ほのか まりな ゆず りん あん こう しん けい なぎさ かおり かおる " +
+    "あゆみ まどか みどり あきこ ふみ はるな ゆめ ねね ここな こころ るな れいな せな えみ あさひ はるひ ゆうか みう まお " +
+    "もえ ちさと さよ さゆり ひろみ ひろこ まさこ のりこ ともこ まりこ えりか れいこ りえ さえ みか みき ちなつ なお").split(" "));
+  const I_ROW = "きしちにひみりぎじぢびぴ";
+  const SMALLS = "ゃゅょ";
+
+  const $ = id => document.getElementById(id);
+  const reduceMotion = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const HKEY = "gojuon-nazuke-history";
+
+  // 縛り解除で変えられる形
+  const VARIANTS = {};
+  const addVar = (from, to) => { from.forEach((k, i) => { if (k && to[i]) (VARIANTS[k] ||= []).push(to[i]); }); };
+  BASE.slice(1, 4).forEach((col, i) => addVar(col, DAKU[i]));   // か・さ・た行 → 濁音
+  addVar(BASE[5], DAKU[3]);                                     // は行 → ば行
+  addVar(BASE[5], DAKU[4]);                                     // は行 → ぱ行
+  addVar(["や", null, "ゆ", null, "よ"], ["ゃ", null, "ゅ", null, "ょ"]);
+  addVar(["つ"], ["っ"]);
+
+  let S;
+  function newState(prev) {
+    const o = prev || {};
+    const lenMode = o.lenMode ?? "random";
+    return {
+      lenMode, len: lenMode === "random" ? 5 + Math.floor(Math.random() * 4) : lenMode,
+      daku: !!o.daku, small: !!o.small, unlock: !!o.unlock, unlockUsed: false, redraw: !!o.redraw, redrawUsed: false,
+      slots: [], pool: [], current: null, currentOrig: null, drawn: [], done: false, rolling: false, justIdx: -1
+    };
+  }
+  function buildPool(st) {
+    const cols = [...BASE, ...(st.daku ? DAKU : []), ...(st.small ? SMALL : [])];
+    return cols.flat().filter(Boolean);
+  }
+  function start(keep) {
+    S = newState(keep);
+    S.slots = Array(S.len).fill(null);
+    S.pool = buildPool(S);
+    $("result").hidden = true;
+    draw();
+  }
+
+  let rollTimer = null;
+  function draw(avoid) {
+    let k;
+    do { k = S.pool[Math.floor(Math.random() * S.pool.length)]; } while (k === avoid && S.pool.length > 1);
+    S.current = k;
+    S.currentOrig = null;
+    const tile = $("tile");
+    clearInterval(rollTimer);
+    if (reduceMotion()) { S.rolling = false; render(); return; }
+    S.rolling = true; render();
+    const all = buildPool(S); let n = 0;
+    tile.classList.add("rolling"); tile.classList.remove("land");
+    rollTimer = setInterval(() => {
+      tile.textContent = all[Math.floor(Math.random() * all.length)];
+      if (++n >= 7) {
+        clearInterval(rollTimer);
+        S.rolling = false;
+        tile.classList.remove("rolling"); void tile.offsetWidth; tile.classList.add("land");
+        render();
+      }
+    }, 50);
+  }
+
+  function place(idx) {
+    if (S.done || S.rolling || !S.current || idx >= S.len || S.slots[idx]) return;
+    S.slots[idx] = S.current;
+    if (S.currentOrig) S.drawn.push({ k: S.currentOrig, how: "pass" });
+    S.drawn.push({ k: S.current, how: "used" });
+    S.current = null; S.currentOrig = null; S.justIdx = idx;
+    if (S.slots.every(Boolean)) { finish(); return; }
+    render();
+    setTimeout(draw, reduceMotion() ? 0 : 180);
+  }
+  function redraw() {
+    if (!S.redraw || S.redrawUsed || S.done || S.rolling || !S.current) return;
+    if (S.currentOrig) S.drawn.push({ k: S.currentOrig, how: "pass" });
+    S.drawn.push({ k: S.current, how: "pass" });
+    S.redrawUsed = true;
+    S.redrawFrom = S.current;
+    draw(S.current);
+  }
+  function transform(to) {
+    if (!S.unlock || S.unlockUsed || S.done || S.rolling || !S.current) return;
+    if (!(VARIANTS[S.current] || []).includes(to)) return;
+    S.currentOrig = S.current;
+    S.current = to;
+    S.unlockUsed = true;
+    const tile = $("tile");
+    tile.classList.remove("land"); void tile.offsetWidth; tile.classList.add("land");
+    render();
+  }
+
+  // 止め字：[語尾, 点, 印象]（長いものから順に判定）
+  const ENDINGS = [
+    ["のすけ",16,"男の子"],["たろう",16,"男の子"],["じろう",15,"男の子"],["えもん",12,"男の子"],
+    ["すけ",12,"男の子"],["ろう",11,"男の子"],["へい",10,"男の子"],["ひこ",10,"男の子"],["まる",8,"男の子"],
+    ["こ",10,"女の子"],["と",9,"男の子"],["み",8,"女の子"],["な",8,"女の子"],["た",8,"男の子"],["や",8,"男の子"],
+    ["か",7,"女の子"],["き",7,null],["え",6,"女の子"],["り",6,"女の子"],["の",6,"女の子"],["し",6,"男の子"],
+    ["お",6,"男の子"],["じ",6,"男の子"],["ほ",5,"女の子"],["は",5,"女の子"],["よ",5,"女の子"],["ま",5,"男の子"],
+    ["ご",5,"男の子"],["い",5,null],["う",4,"男の子"],["ね",4,"女の子"],["ん",4,null],["ら",4,"女の子"],
+    ["さ",4,"女の子"],["ゆ",3,"女の子"],["せ",3,null],["ち",3,null]
+  ];
+  const SURNAMES = ("さとう すずき たかはし たなか いとう わたなべ やまもと なかむら こばやし かとう よしだ やまだ ささき " +
+    "やまぐち まつもと いのうえ きむら はやし しみず やまざき もり あべ いけだ はしもと やました いしかわ なかじま まえだ " +
+    "ふじた おがわ ごとう おかだ はせがわ むらかみ こんどう いしい さいとう さかもと えんどう あおき ふじい にしむら ふくだ " +
+    "おおた みうら ふじわら おかもと まつだ なかがわ なかの はらだ おの たむら たけうち かねこ わだ なかやま いしだ うえだ " +
+    "もりた はら しばた さかい くどう よこやま みやざき みやもと うちだ たかぎ あんどう たにぐち おおの まるやま いまい " +
+    "たかだ ふじもと たけだ むらた うえの すぎやま ますだ ひらの おおつか ちば くぼ まつい いわさき さくらい きのした " +
+    "のぐち まつお きくち のむら あらい ほんだ すぎもと かわぐち ひぐち にしだ やの しまだ たかの こいけ").split(" ");
+  const PARTS = ("ゆう しょう まさ ひろ かず たか よし はる あき なつ ふゆ みな さく ひな りょう けん こう しん だい りゅう " +
+    "そう たく とも のぶ まな あや さや みつ てる やす ひで ゆき まり えり あい みお れい ゆめ ひかり そら かい みゆ はな " +
+    "もも さき ちか なお あゆ るり すみ きよ ただ つね ひさ").split(" ");
+  const RARE = "ぬへむをぁぃぅぇぉぢづぺぷぽぴぜぞゑ";
+  const VOWELS = "あいうえお";
+
+  function scoreName(n) {
+    const a = [...n];
+    const notes = [];
+    const add = (pts, text) => { s += pts; notes.push([pts >= 0 ? "plus" : "minus", `${text}（${pts >= 0 ? "+" : ""}${pts}）`]); };
+    const endOf = str => ENDINGS.find(([suf]) => str.endsWith(suf) && str.length > suf.length);
+    let s = 40;
+
+    if (NAMES.has(n)) {
+      const e = endOf(n);
+      return { score: 100, notes: [["plus", "実在するよくある名前と一致（100点）"]], tags: [e && e[2] ? e[2] + "っぽい" : "男女どちらでも", "実在"] };
+    }
+
+    // 苗字＋名前に分けられるか
+    let given = n;
+    const sur = SURNAMES.filter(x => n.startsWith(x) && n.length - x.length >= 2).sort((p, q) => q.length - p.length)[0];
+    if (sur) {
+      given = n.slice(sur.length);
+      add(12 + sur.length * 3, `「${sur}」という苗字で始まる`);
+      if (NAMES.has(given)) add(30, `「${sur} ${given}」と読めるフルネーム`);
+      else if ([...given].length >= 2 && [...given].length <= 4) add(5, "名前部分の長さがちょうどいい");
+    }
+
+    // 名前が隠れている（苗字の部分を除いて探す）
+    if (!NAMES.has(given)) {
+      const hidden = [...NAMES].filter(x => given.includes(x)).sort((p, q) => q.length - p.length)[0];
+      if (hidden) {
+        const len = [...hidden].length;
+        add(len >= 4 ? 20 : len === 3 ? 14 : 6, `中に「${hidden}」が隠れている`);
+        if (given.endsWith(hidden) && len >= 3) add(6, `最後が「${hidden}」で締まっている`);
+      }
+    }
+
+    // 名前によく使う音
+    const found = PARTS.filter(p => given.includes(p)).slice(0, 4);
+    if (found.length) add(found.length * 4, `名前によく使う音「${found.join("・")}」`);
+
+    // 止め字
+    const e = endOf(n);
+    if (e) add(e[1], `「〜${e[0]}」で終わる`);
+
+    // 始まり
+    if ("んをっゃゅょ".includes(a[0])) add(-30, `「${a[0]}」で始まる名前はほとんどない`);
+    else if ("あかさたなはまやらわ".includes(a[0])) add(3, `ア段の「${a[0]}」で始まると明るい響き`);
+
+    // 文字ごとのチェック
+    const rare = a.filter(c => RARE.includes(c));
+    if (rare.length) add(-4 * rare.length, `名前にはあまり使わない「${[...new Set(rare)].join("・")}」`);
+    a.forEach((c, i) => {
+      if (i === 0) return;
+      const p = a[i - 1];
+      if (SMALLS.includes(c)) {
+        if (I_ROW.includes(p)) add(4, `「${p}${c}」できれいな拗音`);
+        else add(-15, `「${p}${c}」は読めない`);
+      }
+      if (c === "っ" && i === a.length - 1) add(-10, "「っ」で終わると呼びにくい");
+      if (c === p) add(-6, `「${c}${c}」と同じ文字が続く`);
+      if (c === "ん" && p === "ん") add(-6, "「んん」は発音しにくい");
+    });
+    for (let i = 2; i < a.length; i++) {
+      if (VOWELS.includes(a[i]) && VOWELS.includes(a[i - 1]) && VOWELS.includes(a[i - 2])) { add(-6, "母音が3つ続いてぼやける"); break; }
+    }
+    const nn = a.filter(c => c === "ん" || c === "っ").length;
+    if (nn >= 3) add(-8, "「ん」「っ」が多くて詰まって聞こえる");
+
+    // 長さ
+    if (!sur && a.length >= 7) add(-6, "長すぎて覚えにくい");
+
+    const score = Math.max(1, Math.min(99, s));
+    const ge = endOf(given) || e;
+    const tags = [ge && ge[2] ? ge[2] + "っぽい" : "男女どちらでも", a.length + "文字"];
+    if (sur) tags.push("フルネーム風");
+    return { score, notes, tags };
+  }
+
+  function commentFor(s) {
+    if (s >= 100) return "どこかのクラスに必ずいる名前です。";
+    if (s >= 80) return "名簿に載っていても誰も驚きません。";
+    if (s >= 62) return "ちょっと珍しいけど、ありそうな名前。";
+    if (s >= 45) return "キラキラネームの気配がします。";
+    if (s >= 25) return "呼ぶたびに舌をかみそうです。";
+    return "名前というより呪文です。";
+  }
+  function kanjiNum(n) {
+    const d = "〇一二三四五六七八九";
+    if (n < 10) return d[n];
+    const t = Math.floor(n / 10), o = n % 10;
+    return (t > 1 ? d[t] : "") + "十" + (o ? d[o] : "");
+  }
+  function wareki(dt) {
+    const y = dt.getFullYear() - 2018;
+    return `令和${y === 1 ? "元" : kanjiNum(y)}年${kanjiNum(dt.getMonth() + 1)}月${kanjiNum(dt.getDate())}日`;
+  }
+
+  let lastResult = null;
+  function finish() {
+    S.done = true;
+    const name = S.slots.join("");
+    const r = scoreName(name);
+    lastResult = { name, ...r };
+    $("resName").textContent = name;
+    $("resName").style.fontSize = S.len >= 7 ? "2.2rem" : S.len >= 5 ? "2.7rem" : "3.6rem";
+    if (S.unlock) r.tags.push(S.unlockUsed ? "濁音・小文字の解除を使用" : "濁音・小文字の解除は使わず");
+    if (S.redraw) r.tags.push(S.redrawUsed ? "カード変更を使用" : "カード変更は使わず");
+    $("resDate").textContent = wareki(new Date());
+    $("resScore").textContent = r.score;
+    $("resMeter").style.width = "0";
+    requestAnimationFrame(() => requestAnimationFrame(() => { $("resMeter").style.width = r.score + "%"; }));
+    $("resComment").textContent = commentFor(r.score);
+    $("resTags").innerHTML = r.tags.map(t => `<span class="tag">${t}</span>`).join("");
+    $("resNotes").innerHTML = r.notes.length
+      ? r.notes.map(([k, t]) => `<li class="${k}">${t}</li>`).join("")
+      : `<li>可もなく不可もなく</li>`;
+    const tweet = `命名「${name}」
+名前らしさ ${r.score}点 ― ${commentFor(r.score)}
+#五十音なづけ`;
+    $("tweetBtn").href = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweet);
+    $("result").hidden = false;
+    saveHistory({ name, score: r.score });
+    render();
+    $("result").scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "nearest" });
+  }
+
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HKEY) || "[]"); } catch { return []; }
+  }
+  function saveHistory(item) {
+    const h = [item, ...loadHistory()].slice(0, 12);
+    try { localStorage.setItem(HKEY, JSON.stringify(h)); } catch {}
+    memHistory = h;
+  }
+  let memHistory = loadHistory();
+
+  function render() {
+    // 札と状態
+    const tile = $("tile");
+    if (!S.rolling) tile.textContent = S.current || (S.done ? "完" : "");
+    const filled = S.slots.filter(Boolean).length;
+    $("status").textContent = S.done ? "名前ができました" : S.rolling ? "引いています…" : `「${S.current}」をどこに置きますか？`;
+    const lenNote = S.lenMode === "random" ? `今回は${S.len}文字（おまかせ）` : `${S.len}文字`;
+    $("sub").textContent = S.done ? `${S.len}文字すべて埋まりました。` : `${lenNote}・${filled}文字 決定`;
+
+    // 縛り解除
+    const ub = $("unlockBox");
+    ub.hidden = !S.unlock;
+    if (S.unlock) {
+      const vars = S.current && !S.rolling && !S.unlockUsed ? (VARIANTS[S.current] || []) : [];
+      $("unlockLabel").textContent = S.unlockUsed
+        ? (S.currentOrig ? `縛り解除：「${S.currentOrig}」→「${S.current}」に変えました` : "縛り解除：使用済み")
+        : S.done ? "縛り解除：使わずに完成" : vars.length ? "縛り解除（1回だけ）：この形に変える" : "縛り解除（1回だけ）：この文字は変えられません";
+      const btns = $("unlockBtns");
+      btns.innerHTML = "";
+      vars.forEach(v => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "btn kana"; b.id = "var-" + v; b.textContent = v;
+        b.setAttribute("aria-label", `「${S.current}」を「${v}」に変える`);
+        b.addEventListener("click", () => transform(v));
+        btns.appendChild(b);
+      });
+      btns.hidden = !vars.length;
+    }
+
+    // 枠
+    const box = $("slots");
+    box.style.gridTemplateColumns = `repeat(${S.len}, minmax(0, 5.5rem))`;
+    box.innerHTML = "";
+    S.slots.forEach((k, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.id = "slot" + i;
+      b.className = "slot" + (k ? " filled" : "") + (i === S.justIdx ? " just" : "");
+      b.disabled = !k && (S.done || S.rolling);
+      b.setAttribute("aria-label", k ? `${i + 1}文字目：${k}` : `${i + 1}文字目に置く`);
+      b.innerHTML = (k ? k : `<span class="ghost">${S.current && !S.rolling ? S.current : ""}</span>`) + `<span class="num">${i + 1}文字目</span>`;
+      b.addEventListener("click", () => place(i));
+      box.appendChild(b);
+    });
+    S.justIdx = -1;
+
+    // 文字数
+    const seg = $("lenSeg");
+    seg.innerHTML = "";
+    ["random", 3, 4, 5, 6, 7, 8].forEach(n => {
+      const b = document.createElement("button");
+      b.type = "button"; b.id = "len" + n;
+      b.textContent = n === "random" ? "おまかせ 5〜8" : n;
+      if (n === "random") b.style.flex = "3";
+      b.setAttribute("aria-pressed", String(n === S.lenMode));
+      b.addEventListener("click", () => start({ ...S, lenMode: n }));
+      seg.appendChild(b);
+    });
+    $("optDaku").checked = S.daku;
+    $("optSmall").checked = S.small;
+    $("optUnlock").checked = S.unlock;
+    $("optRedraw").checked = S.redraw;
+    const rb = $("redrawBtn");
+    rb.hidden = !S.redraw;
+    rb.disabled = S.redrawUsed || S.done || S.rolling || !S.current;
+    rb.textContent = S.redrawUsed ? `カード変更：使用済み（${S.redrawFrom}を変えた）` : "カードを変える（1回だけ）";
+
+    // 五十音表
+    const status = {};
+    S.drawn.forEach(d => { status[d.k] = d.how; });
+    if (S.currentOrig) status[S.currentOrig] = "pass";
+    if (S.current && !S.rolling) status[S.current] = "current";
+    const groups = [BASE, DAKU, SMALL];
+    const enabled = [true, S.daku, S.small];
+    $("charts").innerHTML = groups.map((g, gi) => {
+      if (gi > 0 && !enabled[gi]) return "";
+      return `<div class="chart">` + g.map(col => `<div class="col">` + col.map(k => {
+        if (!k) return `<span class="cell blank"></span>`;
+        const st = status[k];
+        const cls = st === "used" ? "used" : st === "pass" ? "passed" : st === "current" ? "current" : (enabled[gi] ? "" : "off");
+        return `<span class="cell ${cls}">${k}</span>`;
+      }).join("") + `</div>`).join("") + `</div>`;
+    }).join("");
+
+    // 履歴
+    const h = memHistory;
+    $("history").innerHTML = h.length
+      ? h.map(x => `<li><span class="hn">${x.name}</span><span class="hs">${x.score}点</span></li>`).join("")
+      : `<li><p class="empty">まだありません。名前を作るとここに残ります。</p></li>`;
+  }
+
+  $("restartBtn").addEventListener("click", () => start(S));
+  $("redrawBtn").addEventListener("click", redraw);
+  $("optRedraw").addEventListener("change", e => start({ ...S, redraw: e.target.checked }));
+  $("againBtn").addEventListener("click", () => { start(S); $("board").scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" }); });
+  $("optDaku").addEventListener("change", e => start({ ...S, daku: e.target.checked }));
+  $("optSmall").addEventListener("change", e => start({ ...S, small: e.target.checked }));
+  $("optUnlock").addEventListener("change", e => start({ ...S, unlock: e.target.checked }));
+  $("copyBtn").addEventListener("click", async () => {
+    if (!lastResult) return;
+    const text = `命名「${lastResult.name}」 名前らしさ ${lastResult.score}点 ― ${commentFor(lastResult.score)}（五十音なづけ）`;
+    const btn = $("copyBtn");
+    try { await navigator.clipboard.writeText(text); btn.textContent = "コピーしました"; }
+    catch {
+      const sel = window.getSelection(); const r = document.createRange();
+      r.selectNodeContents($("resName")); sel.removeAllRanges(); sel.addRange(r);
+      btn.textContent = "名前を選択しました";
+    }
+    setTimeout(() => { btn.textContent = "結果をコピー"; }, 1800);
+  });
+  document.addEventListener("keydown", e => {
+    if (e.target.closest && e.target.closest("input")) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (/^[1-8]$/.test(e.key)) { place(Number(e.key) - 1); e.preventDefault(); }
+    else if (e.key === "r" || e.key === "R") { redraw(); }
+  });
+
+  function boot(data) {
+    if (data && data.S && data.S.slots && data.S.lenMode && !data.S.done) {
+      S = { ...data.S, rolling: false };
+      if (!S.current) draw(); else render();
+    } else if (data && data.S) {
+      start(data.S);
+    } else {
+      start();
+    }
+  }
+  window.claude?.hot?.snapshot?.(() => ({ S }));
+  window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+})();
+</script>
+</body>
+</html>
