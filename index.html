@@ -16,6 +16,8 @@
 <meta name="twitter:title" content="五十音なづけ">
 <meta name="twitter:description" content="ランダムに出るひらがなを何文字目に置くか決めて、人の名前を作るゲーム。">
 <meta name="twitter:image" content="https://gojuon-nazuke.com/ogp.png">
+<meta name="twitter:creator" content="@Chairman_gm">
+<meta name="author" content="理事長 (@Chairman_gm)">
 <link rel="canonical" href="https://gojuon-nazuke.com/">
 <style>html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>五十音なづけ</title>
@@ -173,6 +175,9 @@ aside { display: grid; gap: 18px; min-width: 0; }
 .history .hn { font-family: var(--font-kana); font-weight: 600; font-size: 1.05rem; letter-spacing: .06em; }
 .history .hs { color: var(--muted); font-variant-numeric: tabular-nums; font-size: .85rem; }
 .empty { color: var(--muted); font-size: .85rem; margin: 0; }
+.credit { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+.credit a { color: var(--accent); text-decoration: none; font-weight: 700; }
+.credit a:hover, .credit a:focus-visible { text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) { .tile.land, .slot.just { animation: none; } .meter i { transition: none; } }
 </style>
 </head>
@@ -252,6 +257,11 @@ aside { display: grid; gap: 18px; min-width: 0; }
       </section>
     </aside>
   </div>
+
+  <footer class="credit">
+    <span>開発：理事長</span>
+    <a href="https://x.com/Chairman_gm" target="_blank" rel="noopener">@Chairman_gm</a>
+  </footer>
 </div>
 
 <script>
@@ -506,7 +516,7 @@ aside { display: grid; gap: 18px; min-width: 0; }
     const tweet = `命名「${name}」
 名前らしさ ${r.score}点 ― ${commentFor(r.score)}
 #五十音なづけ`;
-    $("tweetBtn").href = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweet) + "&url=" + encodeURIComponent("https://gojuon-nazuke.com/");
+    $("tweetBtn").href = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweet) + "&url=" + encodeURIComponent("https://gojuon-nazuke.com/") + "&via=Chairman_gm";
     $("result").hidden = false;
     saveHistory({ name, score: r.score });
     render();
